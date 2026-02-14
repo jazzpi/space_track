@@ -1,3 +1,5 @@
+use std::{fmt::Display, ops::Add};
+
 use serde::{Deserialize, Serialize};
 
 pub trait OrderByField {
@@ -20,6 +22,39 @@ pub struct OrderBy<T: OrderByField> {
 pub struct Predicate<T: OrderByField> {
     pub field: T,
     pub value: String,
+}
+
+impl<T: OrderByField> Predicate<T> {
+    pub fn build_range_list<V: Ord + Display + Clone + Add<u32, Output = V>>(
+        field: T,
+        mut values: Vec<V>,
+    ) -> Self {
+        values.sort();
+        let mut ranges = Vec::new();
+        let mut current = (values[0].clone(), values[0].clone());
+        for value in values.into_iter().skip(1) {
+            if value == current.1.clone() + 1 {
+                current.1 = value;
+            } else {
+                ranges.push(Self::range(&current.0, &current.1));
+                current = (value.clone(), value);
+            }
+        }
+        ranges.push(Self::range(&current.0, &current.1));
+
+        Self {
+            field,
+            value: ranges.join(","),
+        }
+    }
+
+    fn range<V: Ord + Display>(start: &V, end: &V) -> String {
+        if start == end {
+            start.to_string()
+        } else {
+            format!("{}--{}", start, end)
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -144,4 +144,31 @@ mod tests {
             "https://www.space-track.org/basicspacedata/query/class/gp/COUNTRY_CODE/US/NORAD_CAT_ID/66666--66778/EPOCH/>now-10"
         );
     }
+
+    #[test]
+    fn test_predicates_range() {
+        let base = "https://www.space-track.org/basicspacedata/query/class/gp";
+        let mut ids: Vec<u32> = (66666..=66680).collect();
+        ids.push(66683);
+        ids.extend(66690..=66700);
+        ids.push(66681);
+        let config = Config::<GeneralPerturbationField>::empty()
+            .predicate(Predicate {
+                field: GeneralPerturbationField::CountryCode,
+                value: "US".to_string(),
+            })
+            .predicate(Predicate::build_range_list(
+                GeneralPerturbationField::NoradCatId,
+                ids,
+            ))
+            .predicate(Predicate {
+                field: GeneralPerturbationField::Epoch,
+                value: ">now-10".to_string(),
+            });
+
+        assert_eq!(
+            construct_url(base, config),
+            "https://www.space-track.org/basicspacedata/query/class/gp/COUNTRY_CODE/US/NORAD_CAT_ID/66666--66681,66683,66690--66700/EPOCH/>now-10"
+        );
+    }
 }
