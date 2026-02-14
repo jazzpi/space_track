@@ -48,19 +48,31 @@ fn set_distinct<'a, T: OrderByField>(url: &'a mut String, config: &Config<T>) ->
     url
 }
 
+fn set_predicates<'a, T: OrderByField>(url: &'a mut String, config: &Config<T>) -> &'a String {
+    for predicate in &config.predicates {
+        url.push_str(&format!("/{}/{}", predicate.field.field(), predicate.value));
+    }
+
+    url
+}
+
 pub fn construct_url<T: OrderByField>(base: &str, config: Config<T>) -> String {
     let mut url = base.to_string();
 
     set_limit(&mut url, &config);
     set_order_by(&mut url, &config);
     set_distinct(&mut url, &config);
+    set_predicates(&mut url, &config);
 
     url
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::space_track::classes::BoxscoreField;
+    use crate::{
+        space_track::{classes::BoxscoreField, config::Predicate},
+        GeneralPerturbationField,
+    };
 
     use super::*;
 
@@ -107,6 +119,29 @@ mod tests {
         assert_eq!(
             construct_url(base, config),
             "https://www.space-track.org/basicspacedata/query/class/boxscore/distinct/true"
+        );
+    }
+
+    #[test]
+    fn test_predicates() {
+        let base = "https://www.space-track.org/basicspacedata/query/class/gp";
+        let config = Config::<GeneralPerturbationField>::empty()
+            .predicate(Predicate {
+                field: GeneralPerturbationField::CountryCode,
+                value: "US".to_string(),
+            })
+            .predicate(Predicate {
+                field: GeneralPerturbationField::NoradCatId,
+                value: "66666--66778".to_string(),
+            })
+            .predicate(Predicate {
+                field: GeneralPerturbationField::Epoch,
+                value: ">now-10".to_string(),
+            });
+
+        assert_eq!(
+            construct_url(base, config),
+            "https://www.space-track.org/basicspacedata/query/class/gp/COUNTRY_CODE/US/NORAD_CAT_ID/66666--66778/EPOCH/>now-10"
         );
     }
 }

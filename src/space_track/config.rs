@@ -17,10 +17,17 @@ pub struct OrderBy<T: OrderByField> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Predicate<T: OrderByField> {
+    pub field: T,
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config<T: OrderByField> {
     pub limit: Option<u32>,
     pub offset: Option<u32>,
     pub order_by: Vec<OrderBy<T>>,
+    pub predicates: Vec<Predicate<T>>,
     pub distinct: bool,
 }
 
@@ -30,6 +37,7 @@ impl<T: OrderByField> Config<T> {
             limit: Some(100),
             offset: None,
             order_by: Vec::new(),
+            predicates: Vec::new(),
             distinct: false,
         }
     }
@@ -39,6 +47,7 @@ impl<T: OrderByField> Config<T> {
             limit: None,
             offset: None,
             order_by: Vec::new(),
+            predicates: Vec::new(),
             distinct: false,
         }
     }
@@ -60,6 +69,11 @@ impl<T: OrderByField> Config<T> {
 
     pub fn distinct(mut self) -> Config<T> {
         self.distinct = true;
+        self
+    }
+
+    pub fn predicate(mut self, predicate: Predicate<T>) -> Config<T> {
+        self.predicates.push(predicate);
         self
     }
 }
